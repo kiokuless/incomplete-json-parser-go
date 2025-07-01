@@ -7,9 +7,10 @@ import (
 
 // IncompleteJsonParser is the main parser struct
 type IncompleteJsonParser struct {
-	scope                 Scope
-	finish                bool
-	ignoreExtraCharacters bool
+	scope                  Scope
+	finish                 bool
+	ignoreExtraCharacters  bool
+	allowUnescapedNewlines bool
 }
 
 // ParserOption defines a function type for parser options
@@ -19,6 +20,13 @@ type ParserOption func(*IncompleteJsonParser)
 func WithIgnoreExtraCharacters(ignore bool) ParserOption {
 	return func(p *IncompleteJsonParser) {
 		p.ignoreExtraCharacters = ignore
+	}
+}
+
+// WithAllowUnescapedNewlines sets the option to allow unescaped newlines in JSON strings
+func WithAllowUnescapedNewlines(allow bool) ParserOption {
+	return func(p *IncompleteJsonParser) {
+		p.allowUnescapedNewlines = allow
 	}
 }
 
@@ -86,6 +94,7 @@ func (p *IncompleteJsonParser) Write(chunk string) error {
 			} else {
 				p.scope = NewLiteralScope()
 			}
+			p.scope.SetAllowUnescapedNewlines(p.allowUnescapedNewlines)
 			success := p.scope.Write(letter)
 			if !success {
 				return errors.New("failed to parse the JSON string")

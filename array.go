@@ -35,14 +35,17 @@ func (a *ArrayScope) Write(letter rune) bool {
 				return true
 			} else if letter == '{' {
 				a.scope = NewObjectScope()
+				a.scope.SetAllowUnescapedNewlines(a.allowUnescapedNewlines)
 				a.array = append(a.array, a.scope)
 				return a.scope.Write(letter)
 			} else if letter == '[' {
 				a.scope = NewArrayScope()
+				a.scope.SetAllowUnescapedNewlines(a.allowUnescapedNewlines)
 				a.array = append(a.array, a.scope)
 				return a.scope.Write(letter)
 			} else {
 				a.scope = NewLiteralScope()
+				a.scope.SetAllowUnescapedNewlines(a.allowUnescapedNewlines)
 				a.array = append(a.array, a.scope)
 				return a.scope.Write(letter)
 			}

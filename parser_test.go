@@ -470,6 +470,46 @@ func TestIncompleteJsonParser_IgnoreExtraCharacters(t *testing.T) {
 	require.Equal(t, expected, result)
 }
 
+func TestIncompleteJsonParser_UnescapedNewlines(t *testing.T) {
+	// 実際の改行文字を含むJSON（通常は無効だが、オプション有効時は処理可能）
+	parser := NewIncompleteJsonParser(WithAllowUnescapedNewlines(true))
+	input := `{"response_text": "Hello
+World"}`
+
+	err := parser.Write(input)
+	require.NoError(t, err)
+
+	result, err := parser.GetObjects()
+	require.NoError(t, err)
+
+	// パーサーは改行を含む文字列として解釈すべき
+	expected := map[string]interface{}{
+		"response_text": "Hello\nWorld",
+	}
+
+	require.Equal(t, expected, result)
+}
+
+func TestIncompleteJsonParser_UnescapedNewlines_Disabled(t *testing.T) {
+	// オプション無効時は改行文字が削除される
+	parser := NewIncompleteJsonParser()
+	input := `{"response_text": "Hello
+World"}`
+
+	err := parser.Write(input)
+	require.NoError(t, err)
+
+	result, err := parser.GetObjects()
+	require.NoError(t, err)
+
+	// 改行文字が削除されることを確認
+	expected := map[string]interface{}{
+		"response_text": "HelloWorld",
+	}
+
+	require.Equal(t, expected, result)
+}
+
 // Test structures for type mapping
 type Person struct {
 	Name string `json:"name"`

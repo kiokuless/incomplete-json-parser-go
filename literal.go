@@ -59,6 +59,28 @@ func (l *LiteralScope) canParseContent() bool {
 
 	// Check if it's a valid string (starts with quote)
 	if strings.HasPrefix(l.content, `"`) {
+		// If allowUnescapedNewlines is disabled, check for unescaped newlines
+		if !l.allowUnescapedNewlines {
+			// Check for unescaped newlines, carriage returns, or tabs
+			for i := 1; i < len(l.content); i++ { // Skip opening quote
+				char := l.content[i]
+				if char == '\n' || char == '\r' || char == '\t' {
+					// Check if it's escaped by counting preceding backslashes
+					backslashes := 0
+					for j := i - 1; j >= 1; j-- {
+						if l.content[j] == '\\' {
+							backslashes++
+						} else {
+							break
+						}
+					}
+					// If even number of backslashes (or no backslashes), it's unescaped
+					if backslashes%2 == 0 {
+						return false // Unescaped newline/tab found
+					}
+				}
+			}
+		}
 		return true
 	}
 
@@ -160,6 +182,43 @@ func (l *LiteralScope) parseString() interface{} {
 		}
 
 		jsonedString += `"`
+	}
+
+	// If allowUnescapedNewlines is enabled, escape newlines before JSON parsing
+	if l.allowUnescapedNewlines {
+		// Carefully escape only unescaped control characters
+		result := strings.Builder{}
+		for i := 0; i < len(jsonedString); i++ {
+			char := jsonedString[i]
+			if char == '\n' || char == '\r' || char == '\t' {
+				// Check if it's already escaped by counting preceding backslashes
+				backslashes := 0
+				for j := i - 1; j >= 0; j-- {
+					if jsonedString[j] == '\\' {
+						backslashes++
+					} else {
+						break
+					}
+				}
+				// If even number of backslashes (or no backslashes), it's unescaped
+				if backslashes%2 == 0 {
+					result.WriteByte('\\')
+					switch char {
+					case '\n':
+						result.WriteByte('n')
+					case '\r':
+						result.WriteByte('r')
+					case '\t':
+						result.WriteByte('t')
+					}
+				} else {
+					result.WriteByte(char)
+				}
+			} else {
+				result.WriteByte(char)
+			}
+		}
+		jsonedString = result.String()
 	}
 
 	var result string

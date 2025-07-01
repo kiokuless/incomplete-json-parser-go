@@ -35,6 +35,7 @@ func (o *ObjectScope) Write(letter rune) bool {
 				return true
 			} else if letter == '"' {
 				o.keyScope = NewLiteralScope()
+				o.keyScope.SetAllowUnescapedNewlines(o.allowUnescapedNewlines)
 				return o.keyScope.Write(letter)
 			} else {
 				return false
@@ -69,12 +70,15 @@ func (o *ObjectScope) Write(letter rune) bool {
 				return true
 			} else if letter == '{' {
 				o.valueScope = NewObjectScope()
+				o.valueScope.SetAllowUnescapedNewlines(o.allowUnescapedNewlines)
 				return o.valueScope.Write(letter)
 			} else if letter == '[' {
 				o.valueScope = NewArrayScope()
+				o.valueScope.SetAllowUnescapedNewlines(o.allowUnescapedNewlines)
 				return o.valueScope.Write(letter)
 			} else {
 				o.valueScope = NewLiteralScope()
+				o.valueScope.SetAllowUnescapedNewlines(o.allowUnescapedNewlines)
 				return o.valueScope.Write(letter)
 			}
 		} else {
