@@ -1,6 +1,7 @@
 package incompletejson
 
 import (
+	"encoding/json"
 	"errors"
 )
 
@@ -41,6 +42,16 @@ func Parse(chunk string) (interface{}, error) {
 		return nil, err
 	}
 	return parser.GetObjects()
+}
+
+// UnmarshalTo is a static method that parses JSON and stores the result in the value pointed to by v
+func UnmarshalTo(chunk string, v interface{}) error {
+	parser := NewIncompleteJsonParser()
+	err := parser.Write(chunk)
+	if err != nil {
+		return err
+	}
+	return parser.UnmarshalTo(v)
 }
 
 // Reset resets the parser's internal state
@@ -100,4 +111,34 @@ func (p *IncompleteJsonParser) GetObjects() (interface{}, error) {
 		return p.scope.GetOrAssume(), nil
 	}
 	return nil, errors.New("no input to parse")
+}
+
+// UnmarshalTo parses the JSON data and stores the result in the value pointed to by v
+func (p *IncompleteJsonParser) UnmarshalTo(v interface{}) error {
+	result, err := p.GetObjects()
+	if err != nil {
+		return err
+	}
+	
+	// Convert to JSON bytes and then unmarshal to the target type
+	jsonBytes, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	
+	return json.Unmarshal(jsonBytes, v)
+}
+
+// GetObjectsAs returns the parsed data as the specified type using generics
+func GetObjectsAs[T any](p *IncompleteJsonParser) (T, error) {
+	var result T
+	err := p.UnmarshalTo(&result)
+	return result, err
+}
+
+// ParseAs is a static generic function that parses JSON and returns the result as the specified type
+func ParseAs[T any](chunk string) (T, error) {
+	var result T
+	err := UnmarshalTo(chunk, &result)
+	return result, err
 }

@@ -455,7 +455,7 @@ func TestIncompleteJsonParser_EscapedCharactersInStrings(t *testing.T) {
 
 func TestIncompleteJsonParser_IgnoreExtraCharacters(t *testing.T) {
 	parser := NewIncompleteJsonParser(WithIgnoreExtraCharacters(true))
-	input := `{"response_text": "答え"}\n\nこれは追加の説明です。`
+	input := `{"message": "こんにちは世界"}\n\nこれは追加のテキストです。`
 
 	err := parser.Write(input)
 	require.NoError(t, err)
@@ -464,8 +464,156 @@ func TestIncompleteJsonParser_IgnoreExtraCharacters(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := map[string]interface{}{
-		"response_text": "答え",
+		"message": "こんにちは世界",
 	}
 
 	require.Equal(t, expected, result)
+}
+
+// Test structures for type mapping
+type Person struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+	City string `json:"city"`
+}
+
+type Address struct {
+	Street  string `json:"street"`
+	City    string `json:"city"`
+	ZipCode string `json:"zipCode"`
+}
+
+type PersonWithAddress struct {
+	Name    string  `json:"name"`
+	Age     int     `json:"age"`
+	Address Address `json:"address"`
+}
+
+type BlogPost struct {
+	Title    string   `json:"title"`
+	Content  string   `json:"content"`
+	Tags     []string `json:"tags"`
+	Comments []string `json:"comments"`
+}
+
+func TestIncompleteJsonParser_UnmarshalTo(t *testing.T) {
+	parser := NewIncompleteJsonParser()
+	jsonString := `{"name":"John","age":30,"city":"New York"}`
+
+	err := parser.Write(jsonString)
+	require.NoError(t, err)
+
+	var person Person
+	err = parser.UnmarshalTo(&person)
+	require.NoError(t, err)
+
+	require.Equal(t, "John", person.Name)
+	require.Equal(t, 30, person.Age)
+	require.Equal(t, "New York", person.City)
+}
+
+func TestIncompleteJsonParser_UnmarshalTo_IncompleteJSON(t *testing.T) {
+	parser := NewIncompleteJsonParser()
+	jsonString := `{"name":"John","age":30,"city":"New York"`
+
+	err := parser.Write(jsonString)
+	require.NoError(t, err)
+
+	var person Person
+	err = parser.UnmarshalTo(&person)
+	require.NoError(t, err)
+
+	require.Equal(t, "John", person.Name)
+	require.Equal(t, 30, person.Age)
+	require.Equal(t, "New York", person.City)
+}
+
+func TestIncompleteJsonParser_UnmarshalTo_NestedStruct(t *testing.T) {
+	parser := NewIncompleteJsonParser()
+	jsonString := `{"name":"John","age":30,"address":{"street":"123 Main St","city":"New York","zipCode":"10001"`
+
+	err := parser.Write(jsonString)
+	require.NoError(t, err)
+
+	var person PersonWithAddress
+	err = parser.UnmarshalTo(&person)
+	require.NoError(t, err)
+
+	require.Equal(t, "John", person.Name)
+	require.Equal(t, 30, person.Age)
+	require.Equal(t, "123 Main St", person.Address.Street)
+	require.Equal(t, "New York", person.Address.City)
+	require.Equal(t, "10001", person.Address.ZipCode)
+}
+
+func TestUnmarshalTo_StaticFunction(t *testing.T) {
+	jsonString := `{"name":"Alice","age":25,"city":"Tokyo"}`
+
+	var person Person
+	err := UnmarshalTo(jsonString, &person)
+	require.NoError(t, err)
+
+	require.Equal(t, "Alice", person.Name)
+	require.Equal(t, 25, person.Age)
+	require.Equal(t, "Tokyo", person.City)
+}
+
+func TestGetObjectsAs_Generics(t *testing.T) {
+	parser := NewIncompleteJsonParser()
+	jsonString := `{"name":"Bob","age":35,"city":"London"}`
+
+	err := parser.Write(jsonString)
+	require.NoError(t, err)
+
+	person, err := GetObjectsAs[Person](parser)
+	require.NoError(t, err)
+
+	require.Equal(t, "Bob", person.Name)
+	require.Equal(t, 35, person.Age)
+	require.Equal(t, "London", person.City)
+}
+
+func TestParseAs_Generics(t *testing.T) {
+	jsonString := `{"name":"Charlie","age":40,"city":"Paris"}`
+
+	person, err := ParseAs[Person](jsonString)
+	require.NoError(t, err)
+
+	require.Equal(t, "Charlie", person.Name)
+	require.Equal(t, 40, person.Age)
+	require.Equal(t, "Paris", person.City)
+}
+
+func TestIncompleteJsonParser_UnmarshalTo_BlogPost(t *testing.T) {
+	parser := NewIncompleteJsonParser()
+	jsonString := `{"title": "Go言語の素晴らしさ", "content": "Goは非常にシンプルで効率的なプログラミング言語です。", "tags": ["プログラミング", "Go"], "comments": ["勉強になりました"]}`
+
+	err := parser.Write(jsonString)
+	require.NoError(t, err)
+
+	var blog BlogPost
+	err = parser.UnmarshalTo(&blog)
+	require.NoError(t, err)
+
+	require.Equal(t, "Go言語の素晴らしさ", blog.Title)
+	require.Equal(t, "Goは非常にシンプルで効率的なプログラミング言語です。", blog.Content)
+	require.Equal(t, []string{"プログラミング", "Go"}, blog.Tags)
+	require.Equal(t, []string{"勉強になりました"}, blog.Comments)
+}
+
+func TestIncompleteJsonParser_UnmarshalTo_IncompleteBlogPost(t *testing.T) {
+	parser := NewIncompleteJsonParser()
+	jsonString := `{"title": "日本の四季について", "content": "日本には美しい四季があります。春は桜、夏は祭り、秋は紅葉、冬は雪景色。それぞれの季節に独特の魅力があり、多くの人々を魅了しています。\n\n"`
+
+	err := parser.Write(jsonString)
+	require.NoError(t, err)
+
+	var blog BlogPost
+	err = parser.UnmarshalTo(&blog)
+	require.NoError(t, err)
+
+	require.Equal(t, "日本の四季について", blog.Title)
+	require.Equal(t, "日本には美しい四季があります。春は桜、夏は祭り、秋は紅葉、冬は雪景色。それぞれの季節に独特の魅力があり、多くの人々を魅了しています。\n\n", blog.Content)
+	require.Empty(t, blog.Tags)
+	require.Empty(t, blog.Comments)
 }
