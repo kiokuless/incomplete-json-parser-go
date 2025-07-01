@@ -2,179 +2,140 @@ package incompletejson
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestIncompleteJsonParser_CompleteObjects(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"city":"New York"}`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": "New York",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_IncompleteObjects(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"city":"New York"`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": "New York",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_IncompleteArrays(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `["apple","banana","orange"`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := []interface{}{"apple", "banana", "orange"}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_IncompleteStrings(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","message":"Hello, world!`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name":    "John",
 		"message": "Hello, world!",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_MultipleChunks(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	chunk1 := `{"name":"John","a`
 	chunk2 := `ge":30,"city":"New York"}`
-	
+
 	err := parser.Write(chunk1)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	err = parser.Write(chunk2)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": "New York",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_NullValues(t *testing.T) {
 	testCases := []string{"n", "nu", "nul", "null"}
-	
+
 	for _, nullValue := range testCases {
-		parser := NewIncompleteJsonParser()
-		jsonString := `{"name":"John","age":30,"isStudent":` + nullValue
-		
-		err := parser.Write(jsonString)
-		if err != nil {
-			t.Fatalf("Expected no error for %s, got %v", nullValue, err)
-		}
-		
-		result, err := parser.GetObjects()
-		if err != nil {
-			t.Fatalf("Expected no error for %s, got %v", nullValue, err)
-		}
-		
-		expected := map[string]interface{}{
-			"name":      "John",
-			"age":       float64(30),
-			"isStudent": nil,
-		}
-		
-		if !reflect.DeepEqual(result, expected) {
-			t.Errorf("For %s: Expected %+v, got %+v", nullValue, expected, result)
-		}
+		t.Run(nullValue, func(t *testing.T) {
+			parser := NewIncompleteJsonParser()
+			jsonString := `{"name":"John","age":30,"isStudent":` + nullValue
+
+			err := parser.Write(jsonString)
+			require.NoError(t, err)
+
+			result, err := parser.GetObjects()
+			require.NoError(t, err)
+
+			expected := map[string]interface{}{
+				"name":      "John",
+				"age":       float64(30),
+				"isStudent": nil,
+			}
+
+			require.Equal(t, expected, result)
+		})
 	}
 }
 
 func TestIncompleteJsonParser_NestedObjects(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"address":{"street":"123 Main St","city":"New York"`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
@@ -183,231 +144,170 @@ func TestIncompleteJsonParser_NestedObjects(t *testing.T) {
 			"city":   "New York",
 		},
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_Parse(t *testing.T) {
 	jsonString := `{"name":"John","age":30,"city":"New York"}`
-	
+
 	result, err := Parse(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": "New York",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_Reset(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"city":"New `
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": "New ",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
-	
+
+	require.Equal(t, expected, result)
+
 	parser.Reset()
 	_, err = parser.GetObjects()
-	if err == nil {
-		t.Error("Expected error after reset, got nil")
-	}
+	require.Error(t, err)
 }
 
 func TestIncompleteJsonParser_TrailingWhitespaces(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"city":"New York"}  
   `
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": "New York",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_RedundantComma(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"city":"New York",`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": "New York",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_SameValueRepeated(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"city":"New York`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result1, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result2, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": "New York",
 	}
-	
-	if !reflect.DeepEqual(result1, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result1)
-	}
-	
-	if !reflect.DeepEqual(result2, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result2)
-	}
+
+	require.Equal(t, expected, result1)
+	require.Equal(t, expected, result2)
 }
 
 func TestIncompleteJsonParser_EndWithColon(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"city":`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": nil,
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_IncrementalKey(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"cit`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"cit":  nil,
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
-	
+
+	require.Equal(t, expected, result)
+
 	// Continue writing
 	err = parser.Write("y")
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err = parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected = map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
 		"city": nil,
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
-	
+
+	require.Equal(t, expected, result)
+
 	// Add quote and colon
 	err = parser.Write(`":`)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err = parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+	require.NoError(t, err)
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_ComplexNestedObject(t *testing.T) {
@@ -429,17 +329,13 @@ func TestIncompleteJsonParser_ComplexNestedObject(t *testing.T) {
       "lng": -74.0060
     }
   }`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"id":       float64(12345),
 		"name":     "John Doe",
@@ -458,26 +354,20 @@ func TestIncompleteJsonParser_ComplexNestedObject(t *testing.T) {
 			},
 		},
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_ComplexNestedWithArray(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","age":30,"address":{"street":"123 Main St","city":"New York","zip":10001, "alias": ["Dante"`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name": "John",
 		"age":  float64(30),
@@ -488,97 +378,94 @@ func TestIncompleteJsonParser_ComplexNestedWithArray(t *testing.T) {
 			"alias":  []interface{}{"Dante"},
 		},
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_EscapeCharacters(t *testing.T) {
 	parser := NewIncompleteJsonParser()
-	
+
 	// Create object with escape characters - matching TypeScript test
 	obj := map[string]interface{}{
 		"message": "Hello\nWorld\tTab\r\nNewline\\Backslash\"Quote",
 		"simple":  "No escapes here",
 	}
-	
+
 	// Convert to JSON string to get proper escaping
 	jsonBytes, _ := json.Marshal(obj)
 	jsonString := string(jsonBytes)
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	// Expected should have actual newlines, tabs, etc.
 	expected := map[string]interface{}{
 		"message": "Hello\nWorld\tTab\r\nNewline\\Backslash\"Quote",
 		"simple":  "No escapes here",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_UnicodeCharacters(t *testing.T) {
 	parser := NewIncompleteJsonParser()
-	
+
 	// Create object with Unicode characters
 	obj := map[string]interface{}{
 		"text": "\u0048\u0065\u006C\u006C\u006F\n\u0048\u0065\u006C\u006C\u006F",
 	}
-	
+
 	// Convert to JSON string to get proper escaping
 	jsonBytes, _ := json.Marshal(obj)
 	jsonString := string(jsonBytes)
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"text": "Hello\nHello",
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
-	}
+
+	require.Equal(t, expected, result)
 }
 
 func TestIncompleteJsonParser_EscapedCharactersInStrings(t *testing.T) {
 	parser := NewIncompleteJsonParser()
 	jsonString := `{"name":"John","message":"Hello, \"World\"! [{}]"}`
-	
+
 	err := parser.Write(jsonString)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	result, err := parser.GetObjects()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	expected := map[string]interface{}{
 		"name":    "John",
 		"message": `Hello, "World"! [{}]`,
 	}
-	
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
+
+	require.Equal(t, expected, result)
+}
+
+func TestIncompleteJsonParser_IgnoreExtraCharacters(t *testing.T) {
+	parser := NewIncompleteJsonParser(WithIgnoreExtraCharacters(true))
+	input := `{"response_text": "答え"}\n\nこれは追加の説明です。`
+
+	err := parser.Write(input)
+	require.NoError(t, err)
+
+	result, err := parser.GetObjects()
+	require.NoError(t, err)
+
+	expected := map[string]interface{}{
+		"response_text": "答え",
 	}
+
+	require.Equal(t, expected, result)
 }
