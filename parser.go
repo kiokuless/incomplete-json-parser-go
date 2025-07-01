@@ -129,6 +129,11 @@ func (p *IncompleteJsonParser) UnmarshalTo(v interface{}) error {
 		return err
 	}
 
+	// If result is nil (null JSON), return an error for type safety
+	if result == nil {
+		return errors.New("cannot unmarshal null into struct")
+	}
+
 	// Convert to JSON bytes and then unmarshal to the target type
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {

@@ -648,6 +648,65 @@ func TestIncompleteJsonParser_ComprehensiveEmptyFields(t *testing.T) {
 	require.Equal(t, expected, result)
 }
 
+func TestParseAs_NullInput(t *testing.T) {
+	// "null"入力のテスト - 構造体の場合はエラーになるべき
+	type ResponseBody struct {
+		Text string `json:"text"`
+		ID   int    `json:"id"`
+	}
+
+	result, err := ParseAs[ResponseBody](`null`)
+
+	// nullの場合は型安全性のためエラーになるべき
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot unmarshal null")
+
+	// エラー時はゼロ値が返される
+	expected := ResponseBody{}
+	require.Equal(t, expected, result)
+}
+
+func TestUnmarshalTo_NullInput(t *testing.T) {
+	// UnmarshalTo関数でnull入力のテスト
+	type ResponseBody struct {
+		Text string `json:"text"`
+		ID   int    `json:"id"`
+	}
+
+	var result ResponseBody
+	err := UnmarshalTo(`null`, &result)
+
+	// nullの場合は型安全性のためエラーになるべき
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot unmarshal null")
+}
+
+func TestParse_NullInput(t *testing.T) {
+	// Parse関数でnull入力のテスト - interface{}なので成功すべき
+	result, err := Parse(`null`)
+	require.NoError(t, err)
+	require.Nil(t, result)
+}
+
+func TestParseAs_NullWithPrimitives(t *testing.T) {
+	// プリミティブ型でもnullはエラーになるべき
+
+	// string
+	resultStr, err := ParseAs[string](`null`)
+	require.Error(t, err)
+	require.Equal(t, "", resultStr)
+
+	// int
+	resultInt, err := ParseAs[int](`null`)
+	require.Error(t, err)
+	require.Equal(t, 0, resultInt)
+
+	// bool
+	resultBool, err := ParseAs[bool](`null`)
+	require.Error(t, err)
+	require.Equal(t, false, resultBool)
+}
+
 // Test structures for type mapping
 type Person struct {
 	Name string `json:"name"`
