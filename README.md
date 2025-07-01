@@ -7,7 +7,7 @@
 [![Latest Release](https://img.shields.io/github/v/release/kiokuless/incomplete-json-parser-go)](https://github.com/kiokuless/incomplete-json-parser-go/releases)
 [![License](https://img.shields.io/github/license/kiokuless/incomplete-json-parser-go)](LICENSE)
 
-This is a Go port of the [1000ship/incomplete-json-parser](https://github.com/1000ship/incomplete-json-parser)
+This is a Go port of the [1000ship/incomplete-json-parser](https://github.com/1000ship/incomplete-json-parser) TypeScript library.
 
 ## Installation
 
@@ -110,6 +110,27 @@ parser := incompletejson.NewIncompleteJsonParser(
 // Parse JSON with trailing text
 parser.Write(`{"message":"Hello"}\n\nExtra text here`)
 result, _ := parser.GetObjects() // Works without error
+
+// Allow unescaped newlines in JSON strings
+parser := incompletejson.NewIncompleteJsonParser(
+    incompletejson.WithAllowUnescapedNewlines(true),
+)
+
+// Parse JSON with literal newlines in strings
+parser.Write(`{"text": "Hello
+World"}`)
+result, _ := parser.GetObjects() // result: map[text:Hello\nWorld]
+
+// Using options with static functions
+result, err := incompletejson.Parse(`{"text": "Hello
+World"}`, incompletejson.WithAllowUnescapedNewlines(true))
+
+var data MyStruct
+err := incompletejson.UnmarshalTo(`{"text": "Hello
+World"}`, &data, incompletejson.WithAllowUnescapedNewlines(true))
+
+result, err := incompletejson.ParseAs[MyStruct](`{"text": "Hello
+World"}`, incompletejson.WithAllowUnescapedNewlines(true))
 ```
 
 ## Testing
@@ -143,6 +164,7 @@ go build
 
 ### Advanced Options
 - **WithIgnoreExtraCharacters**: Option to ignore text after valid JSON
+- **WithAllowUnescapedNewlines**: Option to allow unescaped newlines in JSON strings
 - **Functional Options**: Clean API for parser configuration
 
 ## API Reference
@@ -153,7 +175,10 @@ go build
 parser := NewIncompleteJsonParser()
 
 // Parser with options
-parser := NewIncompleteJsonParser(WithIgnoreExtraCharacters(true))
+parser := NewIncompleteJsonParser(
+    WithIgnoreExtraCharacters(true),
+    WithAllowUnescapedNewlines(true),
+)
 ```
 
 ### Instance Methods
@@ -177,12 +202,19 @@ parser.Reset()
 // Basic parsing
 result, err := Parse(jsonString)
 
+// Basic parsing with options
+result, err := Parse(jsonString, WithAllowUnescapedNewlines(true))
+
 // Type-safe parsing
 var target MyStruct
 err := UnmarshalTo(jsonString, &target)
 
+// Type-safe parsing with options
+err := UnmarshalTo(jsonString, &target, WithAllowUnescapedNewlines(true))
+
 // Generics (Go 1.18+)
 result, err := ParseAs[MyStruct](jsonString)
+result, err := ParseAs[MyStruct](jsonString, WithAllowUnescapedNewlines(true))
 target, err := GetObjectsAs[MyStruct](parser)
 ```
 
@@ -259,3 +291,7 @@ mise run release-major
 ### Available Commands
 
 Run `mise tasks` to see all available commands.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
