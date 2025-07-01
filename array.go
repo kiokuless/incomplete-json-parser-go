@@ -33,6 +33,10 @@ func (a *ArrayScope) Write(letter rune) bool {
 		if a.scope == nil {
 			if isWhitespace(letter) {
 				return true
+			} else if letter == ']' {
+				// Empty array case: []
+				a.finish = true
+				return true
 			} else if letter == '{' {
 				a.scope = NewObjectScope()
 				a.scope.SetAllowUnescapedNewlines(a.allowUnescapedNewlines)

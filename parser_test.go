@@ -555,6 +555,99 @@ User", "age": 30}`
 	require.Equal(t, expected, result)
 }
 
+func TestIncompleteJsonParser_EmptyFields(t *testing.T) {
+	// 空のフィールドのテスト（空文字列のみ）
+	parser := NewIncompleteJsonParser()
+	input := `{"response_text": "", "name": "test"}`
+
+	err := parser.Write(input)
+	require.NoError(t, err)
+
+	result, err := parser.GetObjects()
+	require.NoError(t, err)
+
+	expected := map[string]interface{}{
+		"response_text": "",
+		"name":          "test",
+	}
+
+	require.Equal(t, expected, result)
+}
+
+func TestIncompleteJsonParser_EmptyString(t *testing.T) {
+	// 空文字列のみのテスト
+	parser := NewIncompleteJsonParser()
+	input := `{"message": ""}`
+
+	err := parser.Write(input)
+	require.NoError(t, err)
+
+	result, err := parser.GetObjects()
+	require.NoError(t, err)
+
+	expected := map[string]interface{}{
+		"message": "",
+	}
+
+	require.Equal(t, expected, result)
+}
+
+func TestIncompleteJsonParser_EmptyArray(t *testing.T) {
+	// 空配列のテスト
+	parser := NewIncompleteJsonParser()
+	input := `{"items": []}`
+
+	err := parser.Write(input)
+	require.NoError(t, err)
+
+	result, err := parser.GetObjects()
+	require.NoError(t, err)
+
+	expected := map[string]interface{}{
+		"items": []interface{}{},
+	}
+
+	require.Equal(t, expected, result)
+}
+
+func TestIncompleteJsonParser_EmptyObject(t *testing.T) {
+	// 空オブジェクトのテスト
+	parser := NewIncompleteJsonParser()
+	input := `{"data": {}}`
+
+	err := parser.Write(input)
+	require.NoError(t, err)
+
+	result, err := parser.GetObjects()
+	require.NoError(t, err)
+
+	expected := map[string]interface{}{
+		"data": map[string]interface{}{},
+	}
+
+	require.Equal(t, expected, result)
+}
+
+func TestIncompleteJsonParser_ComprehensiveEmptyFields(t *testing.T) {
+	// 包括的な空フィールドテスト
+	parser := NewIncompleteJsonParser()
+	input := `{"str": "", "arr": [], "obj": {}}`
+
+	err := parser.Write(input)
+	require.NoError(t, err)
+
+	result, err := parser.GetObjects()
+	require.NoError(t, err)
+
+	expected := map[string]interface{}{
+		"str": "",
+		"arr": []interface{}{},
+		"obj": map[string]interface{}{},
+	}
+
+	require.Equal(t, expected, result)
+}
+
 // Test structures for type mapping
 type Person struct {
 	Name string `json:"name"`

@@ -33,6 +33,10 @@ func (o *ObjectScope) Write(letter rune) bool {
 		if o.keyScope == nil {
 			if isWhitespace(letter) {
 				return true
+			} else if letter == '}' {
+				// Empty object case: {}
+				o.finish = true
+				return true
 			} else if letter == '"' {
 				o.keyScope = NewLiteralScope()
 				o.keyScope.SetAllowUnescapedNewlines(o.allowUnescapedNewlines)
