@@ -119,13 +119,13 @@ func (p *IncompleteJsonParser) UnmarshalTo(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Convert to JSON bytes and then unmarshal to the target type
 	jsonBytes, err := json.Marshal(result)
 	if err != nil {
 		return err
 	}
-	
+
 	return json.Unmarshal(jsonBytes, v)
 }
 

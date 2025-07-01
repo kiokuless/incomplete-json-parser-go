@@ -1,6 +1,5 @@
 package incompletejson
 
-
 // ArrayScope handles parsing of JSON arrays
 type ArrayScope struct {
 	BaseScope
@@ -29,7 +28,8 @@ func (a *ArrayScope) Write(letter rune) bool {
 	}
 
 	// Process the letter
-	if a.state == "value" {
+	switch a.state {
+	case "value":
 		if a.scope == nil {
 			if isWhitespace(letter) {
 				return true
@@ -66,7 +66,7 @@ func (a *ArrayScope) Write(letter rune) bool {
 				return true
 			}
 		}
-	} else if a.state == "comma" {
+	case "comma":
 		if isWhitespace(letter) {
 			return true
 		} else if letter == ',' {
@@ -80,7 +80,7 @@ func (a *ArrayScope) Write(letter rune) bool {
 			return false
 		}
 	}
-	
+
 	return false
 }
 

@@ -1,5 +1,12 @@
 # Incomplete JSON Parser - Go Port
 
+[![CI](https://github.com/kiokuless/incomplete-json-parser-go/workflows/CI/badge.svg)](https://github.com/kiokuless/incomplete-json-parser-go/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kiokuless/incomplete-json-parser-go)](https://goreportcard.com/report/github.com/kiokuless/incomplete-json-parser-go)
+[![codecov](https://codecov.io/gh/kiokuless/incomplete-json-parser-go/branch/main/graph/badge.svg)](https://codecov.io/gh/kiokuless/incomplete-json-parser-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/kiokuless/incomplete-json-parser-go.svg)](https://pkg.go.dev/github.com/kiokuless/incomplete-json-parser-go)
+[![Latest Release](https://img.shields.io/github/v/release/kiokuless/incomplete-json-parser-go)](https://github.com/kiokuless/incomplete-json-parser-go/releases)
+[![License](https://img.shields.io/github/license/kiokuless/incomplete-json-parser-go)](LICENSE)
+
 This is a Go port of the [1000ship/incomplete-json-parser](https://github.com/1000ship/incomplete-json-parser)
 
 ## Installation
@@ -18,25 +25,25 @@ package main
 import (
     "fmt"
     "log"
-    
+
     incompletejson "github.com/kiokuless/incomplete-json-parser-go"
 )
 
 func main() {
     // Create a new parser
     parser := incompletejson.NewIncompleteJsonParser()
-    
+
     // Parse incomplete JSON
     err := parser.Write(`{"name":"John","age":30,"city":"New`)
     if err != nil {
         log.Fatal(err)
     }
-    
+
     result, err := parser.GetObjects()
     if err != nil {
         log.Fatal(err)
     }
-    
+
     fmt.Printf("Result: %+v\n", result)
     // Output: Result: map[age:30 city:New name:John]
 }
@@ -54,13 +61,13 @@ type Person struct {
 func main() {
     parser := incompletejson.NewIncompleteJsonParser()
     parser.Write(`{"name":"John","age":30,"city":"New York"}`)
-    
+
     var person Person
     err := parser.UnmarshalTo(&person)
     if err != nil {
         log.Fatal(err)
     }
-    
+
     fmt.Printf("Name: %s, Age: %d, City: %s\n", person.Name, person.Age, person.City)
     // Output: Name: John, Age: 30, City: New York
 }
@@ -196,3 +203,59 @@ The parser handles various incomplete JSON scenarios gracefully:
 // Trailing commas
 `{"a":1,"b":2,` → map[a:1 b:2]
 ```
+
+## Development
+
+This project uses [mise](https://mise.jdx.dev/) for development tools and task management.
+
+### Setup
+
+```bash
+# Install mise (if not already installed)
+curl https://mise.run | sh
+
+# Install development tools
+mise install
+
+# Install pre-commit hooks
+mise run precommit-install
+```
+
+### Common Tasks
+
+```bash
+# Run tests
+mise run test
+
+# Run tests with coverage
+mise run test-coverage
+
+# Run linter
+mise run lint
+
+# Format code
+mise run fmt
+
+# Run all checks
+mise run check
+
+# Check next version
+mise run version-check
+
+# Release (patch/minor/major)
+mise run release-patch
+mise run release-minor
+mise run release-major
+```
+
+### Release Process
+
+1. Make sure you're on the main branch with a clean working directory
+2. Check what the next version would be: `mise run version-check`
+3. Release: `mise run release-patch` (or `release-minor`/`release-major`)
+4. The script will run tests, create a tag, and push to GitHub
+5. GitHub Actions will automatically create the release
+
+### Available Commands
+
+Run `mise tasks` to see all available commands.

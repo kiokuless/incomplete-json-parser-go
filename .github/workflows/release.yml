@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+
+    - name: Run tests
+      run: go test -v ./...
+
+    - name: Run linter
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+
+    - name: Get tag info
+      id: tag_info
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        echo "tag=${TAG}" >> $GITHUB_OUTPUT
+        echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Get previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+
+        if [ -z "$PREV_TAG" ]; then
+          echo "First release"
+          CHANGELOG="First release of incomplete-json-parser-go"
+        else
+          echo "Generating changelog from $PREV_TAG to ${{ steps.tag_info.outputs.tag }}"
+          CHANGELOG=$(git log --pretty=format:"- %s" $PREV_TAG..${{ steps.tag_info.outputs.tag }})
+        fi
+
+        # Write changelog to file to handle multiline output
+        cat > changelog.md << EOF
+        ## What's Changed
+
+        $CHANGELOG
+
+        **Full Changelog**: https://github.com/kiokuless/incomplete-json-parser-go/compare/$PREV_TAG...${{ steps.tag_info.outputs.tag }}
+        EOF
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag_info.outputs.tag }}
+        release_name: Release ${{ steps.tag_info.outputs.tag }}
+        body_path: changelog.md
+        draft: false
+        prerelease: false
+
+    - name: Check if module is available on pkg.go.dev
+      run: |
+        echo "Checking if module is available on pkg.go.dev..."
+        sleep 30  # Wait a bit for the tag to be processed
+
+        MODULE_URL="https://pkg.go.dev/github.com/kiokuless/incomplete-json-parser-go@${{ steps.tag_info.outputs.tag }}"
+        echo "Module should be available at: $MODULE_URL"
+
+        # Try to fetch the module info (this will trigger indexing if not already done)
+        curl -s "https://proxy.golang.org/github.com/kiokuless/incomplete-json-parser-go/@v/${{ steps.tag_info.outputs.tag }}.info" || true
+
+        echo "Release ${{ steps.tag_info.outputs.tag }} completed successfully!"
+        echo "The module will be available on pkg.go.dev shortly at: $MODULE_URL"

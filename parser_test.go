@@ -188,7 +188,7 @@ func TestIncompleteJsonParser_Reset(t *testing.T) {
 
 func TestIncompleteJsonParser_TrailingWhitespaces(t *testing.T) {
 	parser := NewIncompleteJsonParser()
-	jsonString := `{"name":"John","age":30,"city":"New York"}  
+	jsonString := `{"name":"John","age":30,"city":"New York"}
   `
 
 	err := parser.Write(jsonString)

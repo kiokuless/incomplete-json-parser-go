@@ -1,12 +1,11 @@
 package incompletejson
 
-
 // ObjectScope handles parsing of JSON objects
 type ObjectScope struct {
 	BaseScope
-	object    map[string]interface{}
-	state     string // "key", "colons", "value", "comma"
-	keyScope  *LiteralScope
+	object     map[string]interface{}
+	state      string // "key", "colons", "value", "comma"
+	keyScope   *LiteralScope
 	valueScope Scope
 }
 
@@ -129,7 +128,7 @@ func (o *ObjectScope) Write(letter rune) bool {
 
 func (o *ObjectScope) GetOrAssume() interface{} {
 	result := make(map[string]interface{})
-	
+
 	// Copy existing completed key-value pairs
 	for k, v := range o.object {
 		result[k] = v

@@ -1,0 +1,82 @@
+[tools]
+golangci-lint = "latest"
+go = "1.22"
+pre-commit = "latest"
+
+[env]
+GO111MODULE = "on"
+
+[tasks.test]
+run = "go test -v -race -coverprofile=coverage.out ./..."
+description = "Run tests"
+
+[tasks.test-coverage]
+run = """
+go test -v -race -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out -o coverage.html
+echo "Coverage report generated: coverage.html"
+"""
+description = "Run tests with coverage report"
+
+[tasks.lint]
+run = "golangci-lint run"
+description = "Run linter"
+
+[tasks.fmt]
+run = "go fmt ./..."
+description = "Format code"
+
+[tasks.tidy]
+run = "go mod tidy"
+description = "Tidy dependencies"
+
+[tasks.check]
+depends = ["fmt", "tidy", "lint", "test"]
+description = "Run all checks"
+
+[tasks.version]
+run = 'git describe --tags --abbrev=0 2>/dev/null || echo "No tags found"'
+description = "Show current version"
+
+[tasks.version-check]
+run = """
+echo "Current version: $(git describe --tags --abbrev=0 2>/dev/null || echo 'No tags found')"
+echo ""
+echo "Next versions would be:"
+echo "  patch: $(./scripts/next-version.sh patch)"
+echo "  minor: $(./scripts/next-version.sh minor)"
+echo "  major: $(./scripts/next-version.sh major)"
+"""
+description = "Show what the next version would be"
+
+[tasks.release-patch]
+run = "./scripts/release.sh patch"
+description = "Release a patch version"
+
+[tasks.release-minor]
+run = "./scripts/release.sh minor"
+description = "Release a minor version"
+
+[tasks.release-major]
+run = "./scripts/release.sh major"
+description = "Release a major version"
+
+[tasks.clean]
+run = """
+rm -f coverage.out coverage.html
+go clean -cache
+go clean -testcache
+"""
+description = "Clean build artifacts"
+
+[tasks.build]
+run = "go build ./..."
+description = "Build the project"
+
+[tasks.precommit-install]
+run = "pre-commit install"
+description = "Install pre-commit hooks"
+
+[tasks.precommit-run]
+run = "pre-commit run --all-files"
+description = "Run pre-commit on all files"

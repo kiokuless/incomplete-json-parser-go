@@ -23,7 +23,7 @@ func (l *LiteralScope) Write(letter rune) bool {
 	}
 
 	l.content += string(letter)
-	
+
 	// For null values, we need to check the actual return value differently
 	// since assume can be nil for valid null values
 	if l.content != "" && !l.canParseContent() {
@@ -66,24 +66,20 @@ func (l *LiteralScope) canParseContent() bool {
 	if l.content == "-" {
 		return true
 	}
-	
-	numberRegex := regexp.MustCompile(`^-?\d+(\.\d*)?$`)
-	if numberRegex.MatchString(l.content) {
-		return true
-	}
 
-	return false
+	numberRegex := regexp.MustCompile(`^-?\d+(\.\d*)?$`)
+	return numberRegex.MatchString(l.content)
 }
 
 func (l *LiteralScope) isCompletedString() bool {
 	if !strings.HasPrefix(l.content, `"`) {
 		return false
 	}
-	
+
 	if len(l.content) < 2 {
 		return false
 	}
-	
+
 	// Check if string ends with unescaped quote
 	// Count consecutive backslashes before the final quote
 	if strings.HasSuffix(l.content, `"`) {
@@ -99,7 +95,7 @@ func (l *LiteralScope) isCompletedString() bool {
 		// If there's an odd number of backslashes, the quote is escaped
 		return !escaped
 	}
-	
+
 	return false
 }
 
@@ -131,7 +127,7 @@ func (l *LiteralScope) GetOrAssume() interface{} {
 	if l.content == "-" {
 		return 0
 	}
-	
+
 	numberRegex := regexp.MustCompile(`^-?\d+(\.\d*)?$`)
 	if numberRegex.MatchString(l.content) {
 		if num, err := strconv.ParseFloat(l.content, 64); err == nil {
@@ -147,7 +143,7 @@ func (l *LiteralScope) parseString() interface{} {
 	jsonedString := l.content
 
 	isCompleted := l.isCompletedString()
-	
+
 	if !isCompleted {
 		// Remove incomplete unicode escape at the end
 		unicodeRegex := regexp.MustCompile(`\\u[\da-fA-F]{0,3}$`)
@@ -183,6 +179,6 @@ func (l *LiteralScope) parseString() interface{} {
 		// Silently return nil for unparseable strings
 		return nil
 	}
-	
+
 	return result
 }
