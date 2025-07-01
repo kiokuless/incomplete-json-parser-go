@@ -43,8 +43,8 @@ func NewIncompleteJsonParser(options ...ParserOption) *IncompleteJsonParser {
 }
 
 // Parse is a static method that parses JSON in a single step
-func Parse(chunk string) (interface{}, error) {
-	parser := NewIncompleteJsonParser()
+func Parse(chunk string, options ...ParserOption) (interface{}, error) {
+	parser := NewIncompleteJsonParser(options...)
 	err := parser.Write(chunk)
 	if err != nil {
 		return nil, err
@@ -53,8 +53,8 @@ func Parse(chunk string) (interface{}, error) {
 }
 
 // UnmarshalTo is a static method that parses JSON and stores the result in the value pointed to by v
-func UnmarshalTo(chunk string, v interface{}) error {
-	parser := NewIncompleteJsonParser()
+func UnmarshalTo(chunk string, v interface{}, options ...ParserOption) error {
+	parser := NewIncompleteJsonParser(options...)
 	err := parser.Write(chunk)
 	if err != nil {
 		return err
@@ -146,8 +146,8 @@ func GetObjectsAs[T any](p *IncompleteJsonParser) (T, error) {
 }
 
 // ParseAs is a static generic function that parses JSON and returns the result as the specified type
-func ParseAs[T any](chunk string) (T, error) {
+func ParseAs[T any](chunk string, options ...ParserOption) (T, error) {
 	var result T
-	err := UnmarshalTo(chunk, &result)
+	err := UnmarshalTo(chunk, &result, options...)
 	return result, err
 }

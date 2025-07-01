@@ -510,6 +510,51 @@ World"}`
 	require.Equal(t, expected, result)
 }
 
+func TestParseWithOptions_UnescapedNewlines(t *testing.T) {
+	// Parse関数でオプションを使用
+	input := `{"text": "Hello
+World"}`
+
+	result, err := Parse(input, WithAllowUnescapedNewlines(true))
+	require.NoError(t, err)
+
+	expected := map[string]interface{}{
+		"text": "Hello\nWorld",
+	}
+	require.Equal(t, expected, result)
+}
+
+func TestUnmarshalToWithOptions_UnescapedNewlines(t *testing.T) {
+	// UnmarshalTo関数でオプションを使用
+	input := `{"name": "Test
+User", "age": 25}`
+
+	var person Person
+	err := UnmarshalTo(input, &person, WithAllowUnescapedNewlines(true))
+	require.NoError(t, err)
+
+	expected := Person{
+		Name: "Test\nUser",
+		Age:  25,
+	}
+	require.Equal(t, expected, person)
+}
+
+func TestParseAsWithOptions_UnescapedNewlines(t *testing.T) {
+	// ParseAs関数でオプションを使用
+	input := `{"name": "Test
+User", "age": 30}`
+
+	result, err := ParseAs[Person](input, WithAllowUnescapedNewlines(true))
+	require.NoError(t, err)
+
+	expected := Person{
+		Name: "Test\nUser",
+		Age:  30,
+	}
+	require.Equal(t, expected, result)
+}
+
 // Test structures for type mapping
 type Person struct {
 	Name string `json:"name"`
