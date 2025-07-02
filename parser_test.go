@@ -707,6 +707,106 @@ func TestParseAs_NullWithPrimitives(t *testing.T) {
 	require.Equal(t, false, resultBool)
 }
 
+func TestParseAs_MismatchedFields(t *testing.T) {
+	// 構造体のフィールドとJSONのキーが一致しない場合のテスト
+	type S struct {
+		A string `json:"a"`
+	}
+
+	t.Run("WithoutValidation", func(t *testing.T) {
+		result, err := ParseAs[S](`{"b": "bbbbbbbbbb"}`)
+
+		// エラーは発生しないが、マッチしないフィールドは無視される
+		require.NoError(t, err)
+
+		// フィールドaはゼロ値になる
+		expected := S{A: ""}
+		require.Equal(t, expected, result)
+	})
+
+	t.Run("WithRequiredFieldsValidation", func(t *testing.T) {
+		result, err := ParseAs[S](`{"b": "bbbbbbbbbb"}`, WithRequiredFields(true))
+
+		// WithRequiredFields(true)の場合、必須フィールド"a"が欠けているのでエラー
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "missing required fields: a")
+
+		// エラー時でもパース済みの値は返される
+		expected := S{A: ""}
+		require.Equal(t, expected, result)
+	})
+}
+
+func TestWithRequiredFields(t *testing.T) {
+	// 必須フィールド検証のテスト
+	type User struct {
+		ID       int    `json:"id"`
+		Name     string `json:"name"`
+		Email    string `json:"email,omitempty"`
+		Optional string `json:"optional,omitempty"`
+	}
+
+	t.Run("AllRequiredFieldsPresent", func(t *testing.T) {
+		input := `{"id": 1, "name": "John", "email": "john@example.com"}`
+		var user User
+		err := UnmarshalTo(input, &user, WithRequiredFields(true))
+		require.NoError(t, err)
+		require.Equal(t, 1, user.ID)
+		require.Equal(t, "John", user.Name)
+		require.Equal(t, "john@example.com", user.Email)
+	})
+
+	t.Run("MissingRequiredField", func(t *testing.T) {
+		input := `{"id": 1, "email": "john@example.com"}`
+		var user User
+		err := UnmarshalTo(input, &user, WithRequiredFields(true))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "missing required fields: name")
+	})
+
+	t.Run("MissingOptionalField", func(t *testing.T) {
+		input := `{"id": 1, "name": "John"}`
+		var user User
+		err := UnmarshalTo(input, &user, WithRequiredFields(true))
+		// omitemptyフィールドは必須ではないのでエラーにならない
+		require.NoError(t, err)
+		require.Equal(t, 1, user.ID)
+		require.Equal(t, "John", user.Name)
+		require.Equal(t, "", user.Email) // omitemptyフィールドはゼロ値
+	})
+
+	t.Run("WithoutValidation", func(t *testing.T) {
+		input := `{"id": 1}`
+		var user User
+		// バリデーション無効時は必須フィールドが欠けていてもエラーにならない
+		err := UnmarshalTo(input, &user, WithRequiredFields(false))
+		require.NoError(t, err)
+		require.Equal(t, 1, user.ID)
+		require.Equal(t, "", user.Name) // ゼロ値
+	})
+}
+
+func TestParseAs_WithRequiredFields(t *testing.T) {
+	// ParseAs関数でも必須フィールド検証ができることを確認
+	type Product struct {
+		ID    string  `json:"id"`
+		Name  string  `json:"name"`
+		Price float64 `json:"price"`
+		Stock int     `json:"stock,omitempty"`
+	}
+
+	t.Run("MissingMultipleRequiredFields", func(t *testing.T) {
+		input := `{"id": "P001"}`
+		result, err := ParseAs[Product](input, WithRequiredFields(true))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "missing required fields")
+		require.Contains(t, err.Error(), "name")
+		require.Contains(t, err.Error(), "price")
+		// エラー時でもゼロ値の構造体が返される
+		require.Equal(t, Product{ID: "P001"}, result)
+	})
+}
+
 // Test structures for type mapping
 type Person struct {
 	Name string `json:"name"`

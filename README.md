@@ -131,6 +131,21 @@ World"}`, &data, incompletejson.WithAllowUnescapedNewlines(true))
 
 result, err := incompletejson.ParseAs[MyStruct](`{"text": "Hello
 World"}`, incompletejson.WithAllowUnescapedNewlines(true))
+
+// Validate required fields (non-omitempty)
+type User struct {
+    ID   int    `json:"id"`
+    Name string `json:"name"`
+    Email string `json:"email,omitempty"` // optional
+}
+
+var user User
+err := incompletejson.UnmarshalTo(`{"id": 1}`, &user, incompletejson.WithRequiredFields(true))
+// Error: missing required fields: name
+
+// With ParseAs
+user, err := incompletejson.ParseAs[User](`{"id": 1, "name": "John"}`, incompletejson.WithRequiredFields(true))
+// Success: email is optional (omitempty)
 ```
 
 ## Testing
@@ -165,6 +180,7 @@ go build
 ### Advanced Options
 - **WithIgnoreExtraCharacters**: Option to ignore text after valid JSON
 - **WithAllowUnescapedNewlines**: Option to allow unescaped newlines in JSON strings
+- **WithRequiredFields**: Option to validate that all non-omitempty fields are present
 - **Functional Options**: Clean API for parser configuration
 
 ## API Reference
@@ -178,6 +194,7 @@ parser := NewIncompleteJsonParser()
 parser := NewIncompleteJsonParser(
     WithIgnoreExtraCharacters(true),
     WithAllowUnescapedNewlines(true),
+    WithRequiredFields(true),
 )
 ```
 
@@ -210,11 +227,11 @@ var target MyStruct
 err := UnmarshalTo(jsonString, &target)
 
 // Type-safe parsing with options
-err := UnmarshalTo(jsonString, &target, WithAllowUnescapedNewlines(true))
+err := UnmarshalTo(jsonString, &target, WithAllowUnescapedNewlines(true), WithRequiredFields(true))
 
 // Generics (Go 1.18+)
 result, err := ParseAs[MyStruct](jsonString)
-result, err := ParseAs[MyStruct](jsonString, WithAllowUnescapedNewlines(true))
+result, err := ParseAs[MyStruct](jsonString, WithRequiredFields(true))
 target, err := GetObjectsAs[MyStruct](parser)
 ```
 

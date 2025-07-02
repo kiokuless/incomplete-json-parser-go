@@ -3,6 +3,9 @@ package incompletejson
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
+	"strings"
 )
 
 // IncompleteJsonParser is the main parser struct
@@ -11,6 +14,7 @@ type IncompleteJsonParser struct {
 	finish                 bool
 	ignoreExtraCharacters  bool
 	allowUnescapedNewlines bool
+	validateRequiredFields bool
 }
 
 // ParserOption defines a function type for parser options
@@ -27,6 +31,13 @@ func WithIgnoreExtraCharacters(ignore bool) ParserOption {
 func WithAllowUnescapedNewlines(allow bool) ParserOption {
 	return func(p *IncompleteJsonParser) {
 		p.allowUnescapedNewlines = allow
+	}
+}
+
+// WithRequiredFields sets the option to validate that all non-omitempty fields are present
+func WithRequiredFields(validate bool) ParserOption {
+	return func(p *IncompleteJsonParser) {
+		p.validateRequiredFields = validate
 	}
 }
 
@@ -140,7 +151,17 @@ func (p *IncompleteJsonParser) UnmarshalTo(v interface{}) error {
 		return err
 	}
 
-	return json.Unmarshal(jsonBytes, v)
+	err = json.Unmarshal(jsonBytes, v)
+	if err != nil {
+		return err
+	}
+
+	// Validate required fields if option is enabled
+	if p.validateRequiredFields {
+		return p.validateRequired(v, result)
+	}
+
+	return nil
 }
 
 // GetObjectsAs returns the parsed data as the specified type using generics
@@ -155,4 +176,59 @@ func ParseAs[T any](chunk string, options ...ParserOption) (T, error) {
 	var result T
 	err := UnmarshalTo(chunk, &result, options...)
 	return result, err
+}
+
+// validateRequired checks that all non-omitempty fields are present in the JSON
+func (p *IncompleteJsonParser) validateRequired(target interface{}, jsonData interface{}) error {
+	targetValue := reflect.ValueOf(target)
+	if targetValue.Kind() == reflect.Ptr {
+		targetValue = targetValue.Elem()
+	}
+
+	if targetValue.Kind() != reflect.Struct {
+		// Not a struct, no validation needed
+		return nil
+	}
+
+	targetType := targetValue.Type()
+	jsonMap, ok := jsonData.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("expected JSON object for struct type %s", targetType.Name())
+	}
+
+	var missingFields []string
+
+	for i := 0; i < targetType.NumField(); i++ {
+		field := targetType.Field(i)
+		jsonTag := field.Tag.Get("json")
+
+		if jsonTag == "" || jsonTag == "-" {
+			continue
+		}
+
+		// Parse the tag to get field name and check for omitempty
+		tagParts := strings.Split(jsonTag, ",")
+		fieldName := tagParts[0]
+		hasOmitEmpty := false
+
+		for j := 1; j < len(tagParts); j++ {
+			if tagParts[j] == "omitempty" {
+				hasOmitEmpty = true
+				break
+			}
+		}
+
+		// If field doesn't have omitempty and is not present in JSON, it's an error
+		if !hasOmitEmpty {
+			if _, exists := jsonMap[fieldName]; !exists {
+				missingFields = append(missingFields, fieldName)
+			}
+		}
+	}
+
+	if len(missingFields) > 0 {
+		return fmt.Errorf("missing required fields: %s", strings.Join(missingFields, ", "))
+	}
+
+	return nil
 }
